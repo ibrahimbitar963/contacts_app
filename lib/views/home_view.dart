@@ -11,6 +11,7 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   String name, phone, email;
+  bool flag = false;
   GlobalKey<FormState> _key = GlobalKey<FormState>();
 
   List<UserModel> userslist = [];
@@ -28,7 +29,7 @@ class _HomeViewState extends State<HomeView> {
 
   _buildFloatingActionButton() {
     return FloatingActionButton(
-      onPressed: () => openAlertBox(),
+      onPressed: () => openAlertBox(null),
       backgroundColor: Colors.red,
       child: Icon(Icons.add),
     );
@@ -57,14 +58,34 @@ class _HomeViewState extends State<HomeView> {
       return ListView.builder(
           itemCount: userslist.length,
           itemBuilder: (context, index) {
-            return _buildItem(userslist[index], index);
+            return Dismissible(
+              background: Container(
+                color: Colors.red,
+              ),
+                key: UniqueKey(),
+                onDismissed:(direction){
+          DataBaseHelper.db.deleteUser(userslist[index].id);
+
+                } ,
+                child: _buildItem(userslist[index], index));
           });
     } else {
       return Container();
     }
   }
 
-  openAlertBox() {
+  openAlertBox(UserModel model) {
+    if (model != null) {
+      name = model.name;
+      phone = model.phone;
+      email = model.email;
+      flag = true;
+    } else {
+      name = '';
+      phone = '';
+      email = '';
+      flag = false;
+    }
     showDialog(
         context: context,
         builder: (context) {
@@ -117,9 +138,9 @@ class _HomeViewState extends State<HomeView> {
                         }),
                     FlatButton(
                         onPressed: () {
-                          addUser();
+                          flag ? editUser(model.id) : addUser();
                         },
-                        child: Text('Add User')),
+                        child: Text(flag ? 'Edit User' : 'add user')),
                   ],
                 ),
               ),
@@ -141,96 +162,112 @@ class _HomeViewState extends State<HomeView> {
     setState(() {});
   }
 
+  void editUser(int id) {
+    _key.currentState.save();
+    var dbHelper = DataBaseHelper.db;
+    UserModel user = UserModel(id: id, email: email, phone: phone, name: name);
+    dbHelper.updateUser(user).then((value) => Navigator.pop(context));
+    setState(() {
+      flag = false;
+    });
+  }
+
   _buildItem(UserModel model, int index) {
     return Card(
       child: ListTile(
-        title: Row(
-          children: [
-            Column(
-              children: [
-                Container(
-                  child: CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.black,
-                    child: Text(
-                      model.name.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 30,
-                        color: Colors.white,
+          title: Row(
+            children: [
+              Column(
+                children: [
+                  Container(
+                    child: CircleAvatar(
+                      radius: 25,
+                      backgroundColor: Colors.black,
+                      child: Text(
+                        model.name.substring(0, 1).toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 30,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            SizedBox(
-              width: 30,
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min ,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.account_circle),
-                    Padding(padding: EdgeInsets.only(right: 10)),
-                    Text(
-                      model.name,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black,
+                ],
+              ),
+              SizedBox(
+                width: 30,
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.account_circle),
+                      Padding(padding: EdgeInsets.only(right: 10)),
+                      Text(
+                        model.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
+                        softWrap: true,
+                        maxLines: 2,
                       ),
-                      softWrap: true,
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20,),
-                Row(
-                  children: [
-                    Icon(Icons.phone),
-                    Padding(padding: EdgeInsets.only(right: 10)),
-                    Text(
-                      model.phone,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black,
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.phone),
+                      Padding(padding: EdgeInsets.only(right: 10)),
+                      Text(
+                        model.phone,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
+                        softWrap: true,
+                        maxLines: 2,
                       ),
-                      softWrap: true,
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-                SizedBox(height: 20,),
-                Row(
-                  children: [
-                    Icon(Icons.mail),
-                    Padding(padding: EdgeInsets.only(right: 10)),
-                    Text(
-                      model.email,
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.black,
+                    ],
+                  ),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.mail),
+                      Padding(padding: EdgeInsets.only(right: 10)),
+                      Text(
+                        model.email,
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.black,
+                        ),
+                        softWrap: true,
+                        maxLines: 2,
                       ),
-                      softWrap: true,
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-
-              ],
-            ),
-          ],
-        ),
-        trailing: Padding(
-          padding: const EdgeInsets.only(top:20.0),
-          child: IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: (){},
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
-        )
-      ),
+          trailing: Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () => onEdit(model, index),
+            ),
+          )),
     );
   }
+
+  onEdit(UserModel model, int index) {
+    openAlertBox(model);
+  }
 }
-///////////
+
